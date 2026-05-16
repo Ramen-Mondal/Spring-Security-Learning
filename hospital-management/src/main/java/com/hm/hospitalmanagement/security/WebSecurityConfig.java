@@ -15,43 +15,48 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 import java.io.IOException;
 
 @Configuration
-@EnableWebSecurity
+//@EnableWebSecurity
 @RequiredArgsConstructor
 @Slf4j
 public class WebSecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception{
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
 //                .csrf(csrfConfig ->csrfConfig.disable())
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                        )
+                )
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/public/**","/auth/login","/auth/signup").permitAll()
+                                .requestMatchers("/public/**", "/auth/login", "/auth/signup").permitAll()
 //                        .requestMatchers("/admin/**").authenticated()
 //                        .requestMatchers("/admin/**").hasRole("ADMIN")
 //                                .requestMatchers("/doctor/**").hasAnyRole("DOCTOR","ADMIN")
                                 .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .oauth2Login(oAuth2 ->oAuth2.failureHandler(
-                        (request, response, exception) -> {
-                            log.error("OAuth2 error: {}", exception.getMessage());
-
-                        }
-                ))
+                .oauth2Login(oAuth2 -> oAuth2
+                        .failureHandler(
+                                (request, response, exception) -> {
+                                    log.error("OAuth2 error: {}", exception.getMessage());
+                                }
+                        )
+                        .successHandler(oAuth2SuccessHandler)
+                )
         ;
 //                .formLogin(Customizer.withDefaults());
 
@@ -59,9 +64,5 @@ public class WebSecurityConfig {
         return httpSecurity.build();
     }
 
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception{
-        return config.getAuthenticationManager();
-    }
 
 }
