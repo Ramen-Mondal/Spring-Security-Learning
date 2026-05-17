@@ -36,6 +36,7 @@ import java.io.IOException;
 public class WebSecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
+    private final HandlerExceptionResolver handlerExceptionResolver;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
@@ -57,11 +58,14 @@ public class WebSecurityConfig {
                         .failureHandler(
                                 (request, response, exception) -> {
                                     log.error("OAuth2 error: {}", exception.getMessage());
+                                    handlerExceptionResolver.resolveException(request,response,null,exception);
                                 }
                         )
                         .successHandler(oAuth2SuccessHandler)
                 )
-
+                .exceptionHandling(exceptionConfig-> exceptionConfig.accessDeniedHandler((request, response, accessDeniedException) -> {
+                    handlerExceptionResolver.resolveException(request,response,null,accessDeniedException);
+                }))
         ;
 //                .formLogin(Customizer.withDefaults());
 
