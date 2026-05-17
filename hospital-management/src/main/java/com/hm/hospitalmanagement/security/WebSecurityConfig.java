@@ -1,5 +1,6 @@
 package com.hm.hospitalmanagement.security;
 
+import com.hm.hospitalmanagement.entity.type.PermissionType;
 import com.hm.hospitalmanagement.entity.type.RoleType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -8,11 +9,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -29,10 +32,13 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
+import static com.hm.hospitalmanagement.entity.type.PermissionType.*;
+
 @Configuration
 //@EnableWebSecurity
 @RequiredArgsConstructor
 @Slf4j
+@EnableMethodSecurity
 public class WebSecurityConfig {
     private final JwtAuthFilter jwtAuthFilter;
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
@@ -48,6 +54,8 @@ public class WebSecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                                 .requestMatchers("/public/**", "/auth/login", "/auth/signup").permitAll()
+                                .requestMatchers(HttpMethod.DELETE, "/admin/**")
+                                .hasAnyAuthority(APPOINTMENT_DELETE.name(), USER_MANAGE.name())
 //                        .requestMatchers("/admin/**").authenticated()
                                 .requestMatchers("/admin/**").hasRole(RoleType.ADMIN.name())
                                 .requestMatchers("/doctors/**").hasAnyRole(RoleType.DOCTOR.name(), RoleType.ADMIN.name())
@@ -58,13 +66,13 @@ public class WebSecurityConfig {
                         .failureHandler(
                                 (request, response, exception) -> {
                                     log.error("OAuth2 error: {}", exception.getMessage());
-                                    handlerExceptionResolver.resolveException(request,response,null,exception);
+                                    handlerExceptionResolver.resolveException(request, response, null, exception);
                                 }
                         )
                         .successHandler(oAuth2SuccessHandler)
                 )
-                .exceptionHandling(exceptionConfig-> exceptionConfig.accessDeniedHandler((request, response, accessDeniedException) -> {
-                    handlerExceptionResolver.resolveException(request,response,null,accessDeniedException);
+                .exceptionHandling(exceptionConfig -> exceptionConfig.accessDeniedHandler((request, response, accessDeniedException) -> {
+                    handlerExceptionResolver.resolveException(request, response, null, accessDeniedException);
                 }))
         ;
 //                .formLogin(Customizer.withDefaults());
