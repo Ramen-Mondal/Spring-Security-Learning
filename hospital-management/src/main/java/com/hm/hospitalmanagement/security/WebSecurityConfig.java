@@ -1,5 +1,6 @@
 package com.hm.hospitalmanagement.security;
 
+import com.hm.hospitalmanagement.entity.type.RoleType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -7,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.Customizer;
@@ -19,9 +21,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 import java.io.IOException;
 
@@ -44,8 +48,8 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                                 .requestMatchers("/public/**", "/auth/login", "/auth/signup").permitAll()
 //                        .requestMatchers("/admin/**").authenticated()
-//                        .requestMatchers("/admin/**").hasRole("ADMIN")
-//                                .requestMatchers("/doctor/**").hasAnyRole("DOCTOR","ADMIN")
+                                .requestMatchers("/admin/**").hasRole(RoleType.ADMIN.name())
+                                .requestMatchers("/doctors/**").hasAnyRole(RoleType.DOCTOR.name(), RoleType.ADMIN.name())
                                 .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
@@ -57,6 +61,7 @@ public class WebSecurityConfig {
                         )
                         .successHandler(oAuth2SuccessHandler)
                 )
+
         ;
 //                .formLogin(Customizer.withDefaults());
 
